@@ -135,16 +135,44 @@ const server = net.createServer((socket) => {
       res = new Response("HTTP/1.1", 200, "OK")
     } else if (req.target.startsWith("/echo/")) {
       const str = req.target.slice(6)
-      res = new Response(
-        "HTTP/1.1",
-        200,
-        "OK",
-        {
-          "Content-Type": "text/plain",
-          "Content-Length": String(str.length),
-        },
-        str
-      )
+      if (!req.headers) {
+        res = new Response(
+          "HTTP/1.1",
+          200,
+          "OK",
+          {
+            "Content-Type": "text/plain",
+            "Content-Length": String(str.length),
+          },
+          str
+        )
+      } else {
+        const encoding = req.getHeader("Accept-Encoding")
+        if (encoding !== "gzip") {
+          res = new Response(
+            "HTTP/1.1",
+            200,
+            "OK",
+            {
+              "Content-Type": "text/plain",
+              "Content-Length": String(str.length),
+            },
+            str
+          )
+        } else {
+          res = new Response(
+            "HTTP/1.1",
+            200,
+            "OK",
+            {
+              "Content-Type": "text/plain",
+              "Content-Length": String(str.length),
+              "Content-Encoding": "gzip",
+            },
+            str
+          )
+        }
+      }
     } else if (req.target === "/user-agent") {
       if (!req.headers) {
         res = new Response("HTTP/1.1", 400, "Bad Request")
