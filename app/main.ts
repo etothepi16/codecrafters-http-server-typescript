@@ -1,8 +1,13 @@
+import * as fs from "fs"
 import * as net from "net"
 
 function normalizeHeaderName(name: string): string {
-  return name.split("-").map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase()).join("-")
+  return name
+    .split("-")
+    .map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase())
+    .join("-")
 }
+
 class Request {
   method: string
   target: string
@@ -162,6 +167,23 @@ const server = net.createServer((socket) => {
         },
         userAgent
       )
+    } else if (req.target.startsWith("/files/")) {
+      const fileName = req.target.slice(7)
+      try {
+        const data = fs.readFileSync(fileName, "utf-8")
+        res = new Response(
+          "HTTP/1.1",
+          200,
+          "OK",
+          {
+            "Content-Type": "text/plain",
+            "Content-Length": String(data.length),
+          },
+          data
+        )
+      } catch (err) {
+        res = new Response("HTTP/1.1", 404, "Not Found")
+      }
     } else {
       res = new Response("HTTP/1.1", 404, "Not Found")
     }
