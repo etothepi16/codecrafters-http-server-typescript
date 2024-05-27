@@ -1,5 +1,8 @@
 import * as net from "net"
 
+function normalizeHeaderName(name: string): string {
+  return name.split("-").map((part) => part[0].toUpperCase() + part.slice(1).toLowerCase()).join("-")
+}
 class Request {
   method: string
   target: string
@@ -17,8 +20,22 @@ class Request {
     this.method = method
     this.target = target
     this.version = version
+    // Headers are case-insensitive, so we normalize them to Title-Case
+    if (headers) {
+      for (const [key, value] of Object.entries(headers)) {
+        this.setHeader(key, value)
+      }
+    }
     this.headers = headers ?? {}
     this.body = body ?? ""
+  }
+
+  private setHeader(name: string, value: string) {
+    if (!this.headers) {
+      this.headers = {}
+    }
+    name = normalizeHeaderName(name)
+    this.headers[name] = value
   }
 
   static parse(requestString: string): Request {
@@ -35,11 +52,18 @@ class Request {
         bodyStarted = true
       } else {
         const [key, value] = line.split(": ")
-        headers[key] = value
+        headers[normalizeHeaderName(key)] = value
       }
     }
 
     return new Request(method, target, version, headers, body)
+  }
+
+  getHeader(name: string): string | undefined {
+    if (!this.headers) {
+      return undefined
+    }
+    return this.headers[normalizeHeaderName(name)]
   }
 }
 
@@ -60,6 +84,12 @@ class Response {
     this.version = version
     this.statusCode = statusCode
     this.reasonPhrase = reasonPhrase ?? ""
+    // Headers are case-insensitive, so we normalize them to Title-Case
+    if (headers) {
+      for (const [key, value] of Object.entries(headers)) {
+        this.setHeader(key, value)
+      }
+    }
     this.headers = headers ?? {}
     this.body = body ?? ""
   }
@@ -75,18 +105,32 @@ class Response {
     responseString += this.body
     return responseString
   }
+
+  getHeader(name: string): string | undefined {
+    if (!this.headers) {
+      return undefined
+    }
+    return this.headers[normalizeHeaderName(name)]
+  }
+
+  private setHeader(name: string, value: string) {
+    if (!this.headers) {
+      this.headers = {}
+    }
+    name = normalizeHeaderName(name)
+    this.headers[name] = value
+  }
 }
 
 const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     const req = Request.parse(data.toString())
-
+    let res
     if (req.target === "/") {
-      const res = new Response("HTTP/1.1", 200, "OK")
-      socket.write(res.toString())
+      res = new Response("HTTP/1.1", 200, "OK")
     } else if (req.target.startsWith("/echo/")) {
       const str = req.target.slice(6)
-      const res = new Response(
+      res = new Response(
         "HTTP/1.1",
         200,
         "OK",
@@ -96,12 +140,32 @@ const server = net.createServer((socket) => {
         },
         str
       )
-
-      socket.write(res.toString())
+    } else if (req.target === "/user-agent") {
+      if (!req.headers) {
+        res = new Response("HTTP/1.1", 400, "Bad Request")
+        socket.write(res.toString())
+        return
+      }
+      const userAgent = req.getHeader("User-Agent")
+      if (!userAgent) {
+        res = new Response("HTTP/1.1", 400, "Bad Request")
+        socket.write(res.toString())
+        return
+      }
+      res = new Response(
+        "HTTP/1.1",
+        200,
+        "OK",
+        {
+          "Content-Type": "text/plain",
+          "Content-Length": String(userAgent.length),
+        },
+        userAgent
+      )
     } else {
-      const res = new Response("HTTP/1.1", 404, "Not Found")
-      socket.write(res.toString())
+      res = new Response("HTTP/1.1", 404, "Not Found")
     }
+    socket.write(res.toString())
     socket.end()
   })
 })
