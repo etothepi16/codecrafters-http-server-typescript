@@ -135,7 +135,7 @@ const server = net.createServer((socket) => {
       res = new Response("HTTP/1.1", 200, "OK")
     } else if (req.target.startsWith("/echo/")) {
       const str = req.target.slice(6)
-      const acceptEncoding = req.getHeader("Accept-Encoding")?.split(",")
+      const acceptEncoding = req.getHeader("Accept-Encoding")?.split(", ")
 
       if (!req.headers || !acceptEncoding) {
         res = new Response(
