@@ -172,20 +172,38 @@ const server = net.createServer((socket) => {
       const args = process.argv.slice(2)
       const absPath = args[1]
       const filePath = `${absPath}/${fileName}`
-      try {
-        const data = fs.readFileSync(filePath, "utf-8")
-        res = new Response(
-          "HTTP/1.1",
-          200,
-          "OK",
-          {
-            "Content-Type": "application/octet-stream",
-            "Content-Length": String(data.length),
-          },
-          data
-        )
-      } catch (err) {
-        res = new Response("HTTP/1.1", 404, "Not Found")
+      if (req.method == "GET") {
+        try {
+          const data = fs.readFileSync(filePath, "utf-8")
+          res = new Response(
+            "HTTP/1.1",
+            200,
+            "OK",
+            {
+              "Content-Type": "application/octet-stream",
+              "Content-Length": String(data.length),
+            },
+            data
+          )
+        } catch (err) {
+          res = new Response("HTTP/1.1", 404, "Not Found")
+        }
+      } else if (req.method == "POST") {
+        const data = req.body
+        if (!data) {
+          res = new Response("HTTP/1.1", 400, "Bad Request")
+          socket.write(res.toString())
+          return
+        }
+
+        try {
+          fs.writeFileSync(filePath, data)
+          res = new Response("HTTP/1.1", 201, "Created")
+        } catch (err) {
+          res = new Response("HTTP/1.1", 500, "Internal Server Error")
+        }
+      } else {
+        res = new Response("HTTP/1.1", 405, "Method Not Allowed")
       }
     } else {
       res = new Response("HTTP/1.1", 404, "Not Found")
