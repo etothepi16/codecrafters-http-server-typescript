@@ -163,30 +163,35 @@ const server = net.createServer((socket) => {
           )
         } else {
           const buffer = Buffer.from(str)
-          const compressed = zlib.gzipSync(buffer).toString("hex")
+          const compressed = zlib.gzipSync(buffer)
           res = new Response(
             "HTTP/1.1",
             200,
             "OK",
             {
               "Content-Encoding": "gzip",
-              "Content-Type": "application/octet-stream",
+              "Content-Type": "text/plain",
               "Content-Length": String(compressed.length),
             },
-            compressed
           )
+          socket.write(res.toString())
+          socket.write(compressed)
+          socket.end()
+          return
         }
       }
     } else if (req.target === "/user-agent") {
       if (!req.headers) {
         res = new Response("HTTP/1.1", 400, "Bad Request")
         socket.write(res.toString())
+        socket.end()
         return
       }
       const userAgent = req.getHeader("User-Agent")
       if (!userAgent) {
         res = new Response("HTTP/1.1", 400, "Bad Request")
         socket.write(res.toString())
+        socket.end()
         return
       }
       res = new Response(
@@ -225,6 +230,7 @@ const server = net.createServer((socket) => {
         if (!data) {
           res = new Response("HTTP/1.1", 400, "Bad Request")
           socket.write(res.toString())
+          socket.end()
           return
         }
 
