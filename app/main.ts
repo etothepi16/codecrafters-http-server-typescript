@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import * as net from "net"
+import * as zlib from "zlib"
 
 function normalizeHeaderName(name: string): string {
   return name
@@ -161,6 +162,8 @@ const server = net.createServer((socket) => {
             str
           )
         } else {
+          const buffer = Buffer.from(str)
+          const compressed = zlib.gzipSync(buffer)
           res = new Response(
             "HTTP/1.1",
             200,
@@ -170,7 +173,7 @@ const server = net.createServer((socket) => {
               "Content-Length": String(str.length),
               "Content-Encoding": "gzip",
             },
-            str
+            compressed.toString("hex")
           )
         }
       }
