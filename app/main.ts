@@ -170,7 +170,7 @@ const server = net.createServer((socket) => {
             "OK",
             {
               "Content-Encoding": "gzip",
-              "Content-Type": "text/plain",
+              "Content-Type": "application/octet-stream",
               "Content-Length": String(compressed.length),
             },
             compressed
