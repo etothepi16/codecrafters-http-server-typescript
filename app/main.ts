@@ -135,7 +135,9 @@ const server = net.createServer((socket) => {
       res = new Response("HTTP/1.1", 200, "OK")
     } else if (req.target.startsWith("/echo/")) {
       const str = req.target.slice(6)
-      if (!req.headers) {
+      const acceptEncoding = req.getHeader("Accept-Encoding")?.split(",")
+
+      if (!req.headers || !acceptEncoding) {
         res = new Response(
           "HTTP/1.1",
           200,
@@ -147,8 +149,7 @@ const server = net.createServer((socket) => {
           str
         )
       } else {
-        const encoding = req.getHeader("Accept-Encoding")
-        if (encoding !== "gzip") {
+        if (!acceptEncoding.includes("gzip")) {
           res = new Response(
             "HTTP/1.1",
             200,
