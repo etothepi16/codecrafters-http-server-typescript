@@ -179,7 +179,7 @@ const server = net.createServer((socket) => {
           200,
           "OK",
           {
-            "Content-Type": "text/plain",
+            "Content-Type": "application/octet-stream",
             "Content-Length": String(data.length),
           },
           data
