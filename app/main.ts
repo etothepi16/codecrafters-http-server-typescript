@@ -163,17 +163,17 @@ const server = net.createServer((socket) => {
           )
         } else {
           const buffer = Buffer.from(str)
-          const compressed = zlib.gzipSync(buffer)
+          const compressed = zlib.gzipSync(buffer).toString("hex")
           res = new Response(
             "HTTP/1.1",
             200,
             "OK",
             {
               "Content-Type": "text/plain",
-              "Content-Length": String(str.length),
+              "Content-Length": String(compressed.length),
               "Content-Encoding": "gzip",
             },
-            compressed.toString("hex")
+            compressed
           )
         }
       }
