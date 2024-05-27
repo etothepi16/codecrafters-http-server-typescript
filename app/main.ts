@@ -169,8 +169,11 @@ const server = net.createServer((socket) => {
       )
     } else if (req.target.startsWith("/files/")) {
       const fileName = req.target.slice(7)
+      const args = process.argv.slice(2)
+      const absPath = args[1]
+      const filePath = `${absPath}/${fileName}`
       try {
-        const data = fs.readFileSync(fileName, "utf-8")
+        const data = fs.readFileSync(filePath, "utf-8")
         res = new Response(
           "HTTP/1.1",
           200,
